@@ -186,6 +186,7 @@
   static struct myrate rate1 = {1, 1};
   static struct myrate rate2 = {1, 1};
   static char * htpasswd_file = NULL;
+  static char * exec = NULL;
   static int    digesttype = DIGEST_CLEARTEXT;
   static int    hassystem = FALSE;
 
@@ -212,6 +213,7 @@
   static void  addgeneric(Port_T, char*, char*);
   static void  addcommand(int, unsigned);
   static void  addargument(char *);
+  static void  addexec(char *);
   static void  addmmonit(URL_T, int, int, char *);
   static void  addmailserver(MailServer_T);
   static int   addcredentials(char *, char *, int, int);
@@ -317,6 +319,7 @@ statement_list  : statement
                 ;
 
 statement       : setalert
+                | setexec
                 | setdaemon
                 | setlog
                 | seteventqueue
@@ -493,6 +496,9 @@ setalert        : SET alertmail '{' eventoptionlist '}' formatlist reminder {
                 | SET alertmail NOT '{' eventoptionlist '}' formatlist reminder {
                    addmail($<string>2, &mailset, &Run.maillist, ~eventset, $<number>8);
                   }
+                ;
+
+setexec         : SET EXEC execlist { Run.alert_exec = exec; exec = NULL; }
                 ;
 
 setdaemon       : SET DAEMON NUMBER startdelay {
@@ -878,6 +884,14 @@ stop            : STOP argumentlist exectimeout {
 
 argumentlist    : argument
                 | argumentlist argument
+                ;
+
+execlist        : exec
+                | execlist exec
+                ;
+
+exec            : STRING { addexec($1); }
+                | PATH   { addexec($1); }
                 ;
 
 useroptionlist  : useroption
@@ -1899,6 +1913,7 @@ static void preparse() {
   Run.expectbuffer        = STRLEN;
   Run.mmonits             = NULL;
   Run.maillist            = NULL;
+  Run.alert_exec          = NULL;
   Run.mailservers         = NULL;
   Run.MailFormat.from     = NULL;
   Run.MailFormat.replyto  = NULL;
@@ -2730,6 +2745,16 @@ static void addargument(char *argument) {
   
 }
 
+static void addexec(char *more_exec) {
+  if (! exec)
+  {
+    exec = more_exec;
+  }
+  else
+  {
+    exec = Util_getString("%s '%s'",exec, more_exec);
+  }
+}
 
 /*
  * Setup a url request for the current port object

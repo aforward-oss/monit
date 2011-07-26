@@ -858,6 +858,7 @@ struct myrun {
   char *mail_hostname;    /**< Used in HELO/EHLO/MessageID when sending mail */
   int mailserver_timeout;    /**< Connect and read timeout for a SMTP server */
   Mail_T maillist;                /**< Global alert notification mailinglist */
+  char *alert_exec;                               /* a script to run on exec */
   MailServer_T mailservers;    /**< List of MTAs used for alert notification */
   Mmonit_T mmonits;        /**< Event notification and status receivers list */
   Auth_T credentials;    /** A list holding Basic Authentication information */
