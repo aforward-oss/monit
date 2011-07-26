@@ -71,7 +71,7 @@
 static void copy_mail(Mail_T, Mail_T);
 static void replace_bare_linefeed(Mail_T *);
 static void substitute(Mail_T *, Event_T);
-
+static void substitute_exec(char *, Event_T);
 
 /* ------------------------------------------------------------------ Public */
 
@@ -182,6 +182,13 @@ int handle_alert(Event_T E) {
       gc_mail_list(&list);
 
     }
+    
+    if (Run.alert_exec)
+    {
+      char* exec_command = Util_getString("%s",Run.alert_exec);
+      substitute_exec(exec_command,E);
+      system(exec_command);
+    }    
 
   }
 
@@ -214,6 +221,18 @@ static void substitute(Mail_T *m, Event_T e) {
 
   Util_replaceString(&(*m)->subject, "$ACTION", Event_get_action_description(e));
   Util_replaceString(&(*m)->message, "$ACTION", Event_get_action_description(e));
+}
+
+static void substitute_exec(char *exec_command, Event_T e) {
+  char timestamp[STRLEN];
+  Util_getRFC822Date((time_t *)&e->collected.tv_sec, timestamp, STRLEN);
+
+  Util_replaceString(&exec_command, "$HOST", Run.localhostname);
+  Util_replaceString(&exec_command, "$DATE", timestamp);
+  Util_replaceString(&exec_command, "$SERVICE", Event_get_source_name(e));
+  Util_replaceString(&exec_command, "$EVENT", Event_get_description(e));
+  Util_replaceString(&exec_command, "$DESCRIPTION", NVLSTR(Event_get_message(e)));
+  Util_replaceString(&exec_command, "$ACTION", Event_get_action_description(e));
 }
 
 
