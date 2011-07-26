@@ -56,7 +56,7 @@
 #include <sys/wait.h>
 #endif
 
-#include "monitor.h"
+#include "monit.h"
 #include "net.h"
 #include "engine.h"
 

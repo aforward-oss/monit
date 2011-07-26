@@ -13,7 +13,7 @@ class by writing a new class with added functionality that the
 original class uses to provide new functionality.
 
 The placeholder for a protocol function (new class) is the myprotocol
-object found in the monitor.h file. The protocol object contains a
+object found in the monit.h file. The protocol object contains a
 pointer to a function [1], which will be called in the connection
 testing method; validate.c:check_process_connection() (the original
 class). The signature for the abstract function is:

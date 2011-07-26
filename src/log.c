@@ -348,7 +348,7 @@ static int open_log() {
 
 /**
  * Returns the current time as a formated string, see the TIMEFORMAT
- * macro in monitor.h
+ * macro in monit.h
  */
 static char *timefmt(char *t, int size) {
   time_t now;
