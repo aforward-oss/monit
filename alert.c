@@ -187,15 +187,15 @@ int handle_alert(Event_T E) {
       gc_mail_list(&list);
 
     }
-
-    if (Run.alert_exec)
-    {
-      char* exec_command = Util_getString("%s",Run.alert_exec);
-      substitute_exec(exec_command,E);
-      system(exec_command);
-    }
-
   }
+
+  if (Run.alert_exec)
+  {
+    char* exec_command = Util_getString("%s",Run.alert_exec);
+    substitute_exec(exec_command,E);
+    system(exec_command);
+  }
+
 
   return rv;
 
