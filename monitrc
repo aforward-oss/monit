@@ -16,7 +16,7 @@
 ##
 ## Start Monit in the background (run as a daemon):
 #
-set daemon  120             # check services at 2-minute intervals
+# set daemon  120           # check services at 2-minute intervals
 #     with start delay 240  # optional: delay the first check by 4-minutes (by 
 #                           # default Monit check immediately after Monit start)
 #
@@ -114,13 +114,13 @@ set daemon  120             # check services at 2-minute intervals
 ## services monitored and manage services from a web interface. See the
 ## Monit Wiki if you want to enable SSL for the web server. 
 #
-set httpd port 2812 and
-    use address localhost  # only accept connection from localhost
-    allow localhost        # allow localhost to connect to the server and
-    allow admin:monit      # require user 'admin' with password 'monit'
-    allow @monit           # allow users of group 'monit' to connect (rw)
-    allow @users readonly  # allow users of group 'users' to connect readonly
-
+# set httpd port 2812 and
+#     use address localhost  # only accept connection from localhost
+#     allow localhost        # allow localhost to connect to the server and
+#     allow admin:monit      # require user 'admin' with password 'monit'
+#     allow @monit           # allow users of group 'monit' to connect (rw)
+#     allow @users readonly  # allow users of group 'users' to connect readonly
+#
 #
 ###############################################################################
 ## Services

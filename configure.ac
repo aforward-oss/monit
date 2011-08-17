@@ -1,54 +1,37 @@
-# Process this file with bootstrap to produce a configure script.
+# Process this file with autoconf to produce a configure script.
+# Mark Ferlatte, <ferlatte@cryptio.net>
+#
 
 # autoconf requirement
 AC_PREREQ([2.53])
 
+# Init autoconf and automake
+
 # Note: in  case of beta subversion, use underscore "_" rather then dash "-"
 # since RPM doesn't allow dash in Version
 # Example: 5.0_beta2
-AC_INIT([monit], [5.2.7], [monit-general@nongnu.org])
-AC_CONFIG_AUX_DIR(config)
-AC_CONFIG_MACRO_DIR([m4])
-AM_INIT_AUTOMAKE
-AC_CONFIG_SRCDIR([src/monit.c])
-AC_CONFIG_COMMANDS([libtool_patch],[test `uname` = "OpenBSD" && perl -p -i -e "s/deplibs_check_method=.*/deplibs_check_method=pass_all/g" libtool])
+AC_INIT([monit], [5.2.6cenx], [monit-general@nongnu.org])
 
+# Package info
+AC_REVISION([$Revision: 1.194 $])
+AC_CONFIG_SRCDIR([monitor.c])
 
 # ------------------------------------------------------------------------
 # Programs 
 # ------------------------------------------------------------------------
 
 AC_PROG_CC
+AC_PROG_GCC_TRADITIONAL
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
-AC_CHECK_PROGS([YACC], ['bison -y' byacc yacc], [no], [$PATH:/usr/local/bin:/usr/bin])
-if test "x$YACC" = "xno"; then
-	AC_MSG_ERROR([Monit requires bison, byacc or yacc. Download bison from http://www.gnu.org/software/bison/])
-fi
-AC_PATH_PROG([FLEX], [flex], [no], [$PATH:/usr/local/bin:/usr/bin])
-if test "x$FLEX" = "xno"; then
-        AC_MSG_ERROR([flex is required. Download from http://www.gnu.org/software/flex/])
-fi
-AC_PATH_PROG([POD2MAN], [pod2man], [no], [$PATH:/usr/local/bin:/usr/bin])
-if test "x$POD2MAN" = "xno"; then
-	# Require pod2man unless monit.1 already is built
-	if test ! -f monit.1; then
-		AC_MSG_ERROR([pod2man is required to build the monit.1 man file.])
+AC_PROG_LEX
+	if test "$LEX" != flex; then
+		AC_MSG_ERROR([monit requires flex, not lex])
 	fi
-else
-	d=`date  '+%B %d. %Y'`
-	POD2MANFLAGS="--center 'User Commands' --release '${d}' --date='www.mmonit.com' --lax"
-	AC_SUBST([POD2MANFLAGS])
+AC_CHECK_PROGS(YACC, 'bison -y' byacc yacc)
+if test "x$YACC" = "x"; then
+		AC_MSG_ERROR([monit requires bison, byacc or yacc])
 fi
-
-
-# ------------------------------------------------------------------------
-# Libtool 
-# ------------------------------------------------------------------------
-
-AC_DISABLE_STATIC
-AC_PROG_LIBTOOL
-
 
 # ------------------------------------------------------------------------
 # Libraries 
@@ -61,12 +44,28 @@ AC_CHECK_LIB([nsl],    [inet_addr])
 AC_CHECK_LIB([resolv], [inet_aton])
 AC_CHECK_LIB([crypt],  [crypt])
 
-AC_CHECK_LIB([pthread], [pthread_create], [], [AC_MSG_ERROR([POSIX thread library is required])])
+# Wacky pthread madness
+pthread_libs=""
+AC_CHECK_LIB([pthread], 
+	     [pthread_create],
+	     [pthread_libs="-lpthread"])
+AC_CHECK_LIB([c_r],
+	     [pthread_create],
+	     [pthread_libs="-pthread"])
+if test `uname` = "FreeBSD" -a `uname -r | cut -c1` = "6"
+then
+	pthread_libs="-lthr"
+fi
+if test "$pthread_libs"
+then
+	LIBS="$pthread_libs $LIBS"
+fi
 
 # ------------------------------------------------------------------------
 # Header files 
 # ------------------------------------------------------------------------
 
+# Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_HEADER_STAT
@@ -287,10 +286,24 @@ AC_TYPE_SIGNAL
 AC_STRUCT_TM
 AC_CHECK_MEMBERS([struct tm.tm_gmtoff])
 
+# ------------------------------------------------------------------------
+# Compiler 
+# ------------------------------------------------------------------------
 
-# ------------------------------------------------------------------------
-# Functions 
-# ------------------------------------------------------------------------
+# Compiler characteristics
+AC_C_CONST
+AC_C_BIGENDIAN
+
+# If the compiler is gcc, turn on warnings
+if test "x$GCC" = "xyes"; then
+	case " $CFLAGS " in
+		*[\ \	]-Wall[\ \	]*)
+			;;
+		*)
+			CFLAGS="$CFLAGS -Wall"
+			;;
+	esac
+fi
 
 # Checks for library functions.
 AC_FUNC_ERROR_AT_LINE
@@ -310,11 +323,15 @@ AC_CHECK_FUNCS(backtrace)
 AC_MSG_CHECKING(for SOL_IP)
 AC_TRY_COMPILE([
 	#include <netdb.h>
-	#include <sys/socket.h>], 
-	[int level = SOL_IP;], 
-	[AC_MSG_RESULT(yes)
-	AC_DEFINE([HAVE_SOL_IP], [1], [Define to 1 if SOL_IP is defined.])], 
-	[AC_MSG_RESULT(no)])
+	#include <sys/socket.h>
+], [
+	int level = SOL_IP;
+], [
+	AC_MSG_RESULT(yes)
+	AC_DEFINE([HAVE_SOL_IP], [1], [Define to 1 if SOL_IP is defined.])
+], [
+	AC_MSG_RESULT(no)
+])
 
 AC_MSG_CHECKING(for va_copy)
 AC_TRY_LINK([
@@ -329,32 +346,6 @@ AC_TRY_LINK([
 ], [
 	AC_MSG_RESULT(no)
 ])
-
-
-# ------------------------------------------------------------------------
-# Compiler 
-# ------------------------------------------------------------------------
-
-# Compiler characteristics
-AC_C_CONST
-AC_C_BIGENDIAN
-
-# If the compiler is gcc, tune warnings and make the char type unsigned 
-# and enable C99 support
-if test "x$GCC" = "xyes"; then
-	CFLAGS="$CFLAGS -Wall -Wunused -Wno-unused-label -funsigned-char";
-        # Add C99 support
-        CFLAGS="$CFLAGS -D_GNU_SOURCE -std=c99"
-        # does this compiler support -Wno-pointer-sign ?
-        svd_CFLAGS="$CFLAGS"
-        CFLAGS="-Wno-pointer-sign $CFLAGS"
-        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [return 0;])], [], [CFLAGS="$svd_CFLAGS"])        
-        # does this compiler support -Wno-address ?
-        svd_CFLAGS="$CFLAGS"
-        CFLAGS="-Wno-address $CFLAGS"
-        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [return 0;])], [], [CFLAGS="$svd_CFLAGS"])
-fi
-
 
 # ------------------------------------------------------------------------
 # Paths 
@@ -755,52 +746,32 @@ fi
 # Outputs
 # ------------------------------------------------------------------------
 
-AC_CONFIG_HEADER([src/config.h])
+AC_CONFIG_HEADER([config.h])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 
-echo
-echo "Monit Build Information:"
-echo
+echo ""
+echo "monit has been configured with the following options:"
+
 echo "                Architecture: ${ARCH}"
+if test "$use_pam" = "1"; then
+    echo "                 PAM support: enabled"
+else
+    echo "                 PAM support: disabled"
+fi
 if test "$use_sslstatic" = "1" -o "$use_ssl" = "1"; then
-echo "       SSL include directory: ${sslincldir}"
-echo "       SSL library directory: ${ssllibdir}"
+    echo "                 SSL support: enabled"
+    echo "       SSL include directory: ${sslincldir}"
+    echo "       SSL library directory: ${ssllibdir}"
+else
+    echo "                 SSL support: disabled"
+fi
+if test "$use_largefiles" = "1"; then
+    echo "         large files support: enabled"  
+else
+    echo "         large files support: disabled"
 fi
 echo "              Compiler flags: ${CFLAGS}"
 echo "                Linker flags: ${LIBS}"
 echo "           pid file location: ${piddir}"
-echo "           Install directory: ${prefix}"
 echo
-
-cat <<EOT
-+------------------------------------------------------------+
-| License:                                                   |
-| This is Open Source Software and use is subject to the GNU |
-| AFFERO GENERAL PUBLIC LICENSE version 3, available in this |
-| distribution in the file COPYING.                          |
-|                                                            |
-| By continuing this installation process, you are bound by  | 
-| the terms of this license agreement. If you do not agree   |
-| with the terms of this license, you must abort the         |
-| installation process at this point.                        |
-+------------------------------------------------------------+
-| Monit has been configured with the following options:      |
-|                                                            |
-EOT
-if test "$use_pam" = "1"; then
-echo "|   PAM support:                                  ENABLED    |"
-else
-echo "|   PAM support:                                  DISABLED   |"
-fi
-if test "$use_sslstatic" = "1" -o "$use_ssl" = "1"; then
-echo "|   SSL support:                                  ENABLED    |"
-else
-echo "|   SSL support:                                  DISABLED   |"
-fi
-if test "$use_largefiles" = "1"; then
-echo "|   Large files support:                          ENABLED    |"
-else
-echo "|   Large files support:                          DISABLED   |"
-fi
-echo "+------------------------------------------------------------+"
