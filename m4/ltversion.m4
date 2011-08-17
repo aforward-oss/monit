@@ -1,1 +1,0 @@
-/usr/bin/../share/aclocal/ltversion.m4
