@@ -2032,7 +2032,7 @@ int Util_getfqdnhostname(char *buf, unsigned len) {
    * In that case, a domain name that is not fully quailified is more useful.
    */
 /* BEGIN HACK */
-    if (strcmp(info->ai_canonname, hostname) == 0) {
+    if (strcmp(info->ai_canonname, LOCALHOST) == 0) {
       snprintf(buf, len, "%s", hostname);
     }
     else {
