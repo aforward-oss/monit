@@ -9,7 +9,9 @@
 
 Version 5.2.6cenx
 
-* Added set exec to apply when alert is set out
+* Added 'set exec' to apply when alert is set out
+* Quick fix for instances on Solaris identify host's FQDN as
+  'localhost'
 
 Version 5.2.6
 
