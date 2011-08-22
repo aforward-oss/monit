@@ -2012,7 +2012,7 @@ void Util_stringbuffer(Buffer_T *b, const char *m, ...) {
 int Util_getfqdnhostname(char *buf, unsigned len) {
   int status;
   char hostname[STRLEN];
-  const char * LOCALHOST = "localhost";
+  char * localhost = "localhost";
   struct addrinfo hints, *info = NULL;
 
   if (gethostname(hostname, sizeof(hostname))) {
