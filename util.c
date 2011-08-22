@@ -2012,6 +2012,7 @@ void Util_stringbuffer(Buffer_T *b, const char *m, ...) {
 int Util_getfqdnhostname(char *buf, unsigned len) {
   int status;
   char hostname[STRLEN];
+  const char * LOCALHOST = "localhost";
   struct addrinfo hints, *info = NULL;
 
   if (gethostname(hostname, sizeof(hostname))) {
@@ -2027,7 +2028,17 @@ int Util_getfqdnhostname(char *buf, unsigned len) {
     LogError("%s: Cannot translate '%s' to FQDN name -- %s\n", prog, hostname, gai_strerror(status));
     snprintf(buf, len, "%s", hostname); // fallback to gethostname()
   } else
-    snprintf(buf, len, "%s", info->ai_canonname);
+  /* Solaris sometimes returns 'localhost' as ai_canoname, which is not useful.
+   * In that case, a domain name that is not fully quailified is more useful.
+   */
+/* BEGIN HACK */
+    if (strcmp(info->ai_canonname, hostname) == 0) {
+      snprintf(buf, len, "%s", hostname);
+    }
+    else {
+      snprintf(buf, len, "%s", info->ai_canonname);
+    }
+/* END HACK */
   if (info)
     freeaddrinfo(info);
   return 0;
